@@ -347,17 +347,24 @@ def load_and_clean(filepath: str) -> pd.DataFrame:
 # ══════════════════════════════════════════════════════════════════════════════
 def add_analytical_block(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Rule-based product segmentation — purely string-matching,
-    zero probabilistic models.
+    Clasificación a prueba de balas: limpia espacios, quita nulos y busca fragmentos.
     """
-    keywords_commodity = ["ANESTE", "AGUJA", "DESINFEC"]
-    family_upper = df["Product_Family"].str.upper()
-    mask_commodity = family_upper.str.contains(
-        "|".join(keywords_commodity), regex=True, na=False
-    )
-    df["Analytical_Block"] = np.where(mask_commodity, "Commodities", "Technical")
+    # 1. Asegurar que es texto y limpiar espacios invisibles al principio y final
+    df["Product_Family"] = df["Product_Family"].astype(str).str.strip().str.upper()
+    
+    # 2. Las palabras clave
+    keywords = ["ANESTE", "AGUJA", "DESINFEC"]
+    
+    # 3. Función manual (más robusta que regex para depurar)
+    def classify(family):
+        for kw in keywords:
+            if kw in family:
+                return "Commodities"
+        return "Technical"
+        
+    df["Analytical_Block"] = df["Product_Family"].apply(classify)
+    
     return df
-
 
 def add_loyalty_factor(df: pd.DataFrame) -> pd.DataFrame:
     """
