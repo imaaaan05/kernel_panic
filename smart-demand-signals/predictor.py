@@ -1,1 +1,0 @@
-#Given data points, predict the demand for a product in a specific region for the next month.
