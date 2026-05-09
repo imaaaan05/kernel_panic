@@ -33,3 +33,4 @@ print(clientes.columns)
 
 print("\nCOLUMNES POTENCIAL")
 print(potencial.columns)
+
