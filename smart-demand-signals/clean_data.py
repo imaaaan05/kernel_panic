@@ -21,7 +21,7 @@ print(potencial.columns.tolist())
 
 ventas_v2 = ventas.merge(    
     productos[
-        ["Id. Producto", "Familia_H", "Categoria_H"]
+        ["Id. Producto", "Familia_H", "Categoria_H", "Bloque analítico"]
     ],
     on="Id. Producto",
     how="left"
