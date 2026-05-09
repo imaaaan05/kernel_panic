@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Demand Signals · Inibsa · app.py</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <!-- highlight.js for Python syntax highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+
+  <style>
+    /* ── Base ── */
+    * { box-sizing: border-box; }
+    body {
+      background: #0f1117;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      color: #e1e4e8;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* ── Animated gradient header ── */
+    .hero {
+      background: linear-gradient(135deg, #0d1b2a 0%, #1a3a5c 40%, #0d6efd 100%);
+      background-size: 300% 300%;
+      animation: gradShift 8s ease infinite;
+      padding: 56px 40px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    @keyframes gradShift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(13,110,253,0.25);
+      border: 1px solid rgba(13,110,253,0.5);
+      color: #7db8ff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 800;
+      color: #fff;
+      margin: 0 0 10px;
+      line-height: 1.15;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.4);
+    }
+    .hero p {
+      color: rgba(255,255,255,0.72);
+      font-size: clamp(0.85rem, 1.5vw, 1rem);
+      max-width: 680px;
+      margin: 0 auto 28px;
+      line-height: 1.65;
+    }
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 4px;
+    }
+    .pill {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.8);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── Layout ── */
+    .main-wrap {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 24px 60px;
+    }
+
+    /* ── Architecture cards ── */
+    .arch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 40px;
+    }
+    .arch-card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 12px;
+      padding: 20px 18px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .arch-card:hover {
+      transform: translateY(-3px);
+      border-color: #0d6efd;
+    }
+    .arch-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: 12px 12px 0 0;
+    }
+    .arch-card.c1::before { background: #0d6efd; }
+    .arch-card.c2::before { background: #6f42c1; }
+    .arch-card.c3::before { background: #fd7e14; }
+    .arch-card.c4::before { background: #20c997; }
+    .arch-card.c5::before { background: #e83e8c; }
+    .arch-step {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .c1 .arch-step { color: #4da3ff; }
+    .c2 .arch-step { color: #9f74e8; }
+    .c3 .arch-step { color: #ffa94d; }
+    .c4 .arch-step { color: #63e6be; }
+    .c5 .arch-step { color: #f57fb7; }
+    .arch-card h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #e1e4e8;
+      margin: 0 0 8px;
+    }
+    .arch-card p {
+      font-size: 0.78rem;
+      color: #8b949e;
+      margin: 0;
+      line-height: 1.55;
+    }
+    .arch-icon {
+      font-size: 1.6rem;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    /* ── Rule boxes ── */
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    .rule-box {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 12px;
+      padding: 22px 20px;
+    }
+    .rule-box.rule-a { border-left: 4px solid #fd7e14; }
+    .rule-box.rule-b { border-left: 4px solid #dc3545; }
+    .rule-box.rule-p { border-left: 4px solid #0d6efd; }
+    .rule-box h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #e1e4e8;
+      margin: 0 0 10px;
+    }
+    .rule-box .formula {
+      background: #0d1117;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 0.75rem;
+      color: #79c0ff;
+      margin: 8px 0;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      border: 1px solid #21262d;
+    }
+    .rule-box p {
+      font-size: 0.8rem;
+      color: #8b949e;
+      margin: 8px 0 0;
+      line-height: 1.5;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .tag-orange { background: rgba(253,126,20,0.15); color: #ffa94d; }
+    .tag-red    { background: rgba(220,53,69,0.15);  color: #ff6b6b; }
+    .tag-blue   { background: rgba(13,110,253,0.15); color: #4da3ff; }
+
+    /* ── Code viewer ── */
+    .code-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #21262d;
+      border-radius: 12px 12px 0 0;
+      padding: 10px 18px;
+      border: 1px solid #30363d;
+      border-bottom: none;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .code-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .dot { width:12px; height:12px; border-radius:50%; }
+    .dot-r { background:#ff5f56; }
+    .dot-y { background:#ffbd2e; }
+    .dot-g { background:#27c93f; }
+    .file-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #8b949e;
+      margin-left: 8px;
+      font-family: 'Fira Code', monospace;
+    }
+    .toolbar-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .toolbar-pill {
+      background: rgba(13,110,253,0.12);
+      border: 1px solid rgba(13,110,253,0.3);
+      border-radius: 999px;
+      color: #4da3ff;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 12px;
+    }
+    .btn-copy {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #0d6efd;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 16px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      letter-spacing: 0.01em;
+    }
+    .btn-copy:hover  { background: #0b5ed7; transform: scale(1.03); }
+    .btn-copy:active { transform: scale(0.98); }
+    .btn-copy.copied { background: #198754; }
+
+    .code-wrap {
+      border: 1px solid #30363d;
+      border-radius: 0 0 12px 12px;
+      overflow: hidden;
+      position: relative;
+    }
+    .code-scroll {
+      max-height: 780px;
+      overflow-y: auto;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+    }
+    .code-scroll::-webkit-scrollbar { width: 7px; height: 7px; }
+    .code-scroll::-webkit-scrollbar-track { background: #0d1117; }
+    .code-scroll::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+
+    /* highlight.js atom-one-dark overrides for line numbers */
+    .code-scroll pre {
+      margin: 0;
+      border-radius: 0;
+    }
+    .code-scroll code.hljs {
+      padding: 0;
+      background: transparent;
+    }
+    .hljs-wrapper {
+      display: flex;
+      background: #0d1117;
+    }
+    .line-numbers {
+      min-width: 52px;
+      padding: 16px 10px 16px 16px;
+      background: #0d1117;
+      border-right: 1px solid #21262d;
+      text-align: right;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .line-numbers span {
+      display: block;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.76rem;
+      line-height: 1.6;
+      color: #3d444d;
+    }
+    .code-inner {
+      flex: 1;
+      padding: 16px 20px;
+      overflow-x: auto;
+    }
+    .code-inner pre {
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      white-space: pre;
+    }
+
+    /* ── Section headings ── */
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #e1e4e8;
+      margin: 0 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #21262d;
+    }
+
+    /* ── Feedback loop visual ── */
+    .feedback-loop {
+      background: linear-gradient(135deg, #161b22, #0d1b2a);
+      border: 1px solid #21262d;
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin-bottom: 36px;
+      position: relative;
+      overflow: hidden;
+    }
+    .feedback-loop::before {
+      content: '🔄';
+      position: absolute;
+      right: 24px;
+      top: 20px;
+      font-size: 3rem;
+      opacity: 0.08;
+    }
+    .feedback-loop h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #e1e4e8;
+      margin: 0 0 8px;
+    }
+    .feedback-loop p {
+      font-size: 0.82rem;
+      color: #8b949e;
+      margin: 0 0 14px;
+      line-height: 1.6;
+    }
+    .flow-steps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+      align-items: center;
+    }
+    .flow-step {
+      background: rgba(13,110,253,0.1);
+      border: 1px solid rgba(13,110,253,0.25);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #7db8ff;
+      white-space: nowrap;
+    }
+    .flow-arrow {
+      color: #30363d;
+      font-size: 1.2rem;
+      padding: 0 6px;
+    }
+
+    /* ── Install banner ── */
+    .install-box {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .install-box code {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.82rem;
+      color: #79c0ff;
+      background: #161b22;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid #21262d;
+      flex: 1;
+      min-width: 200px;
+    }
+    .install-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    /* ── OS Tab switcher ── */
+    .os-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .os-tab {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      color: #8b949e;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 7px 18px;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .os-tab:hover { border-color: #0d6efd; color: #e1e4e8; }
+    .os-tab.active {
+      background: #0d6efd;
+      border-color: #0d6efd;
+      color: #fff;
+    }
+
+    /* ── Step cards ── */
+    .step-card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 14px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .step-card:hover { border-color: #30363d; }
+    .step-card-highlight {
+      border-color: rgba(13,110,253,0.4);
+      box-shadow: 0 0 0 1px rgba(13,110,253,0.15), 0 4px 24px rgba(13,110,253,0.1);
+    }
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 22px;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid #21262d;
+      flex-wrap: wrap;
+    }
+    .step-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1a3a5c, #0d6efd);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-title {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: #e1e4e8;
+      margin-bottom: 2px;
+    }
+    .step-sub {
+      font-size: 0.76rem;
+      color: #8b949e;
+    }
+    .step-badge {
+      margin-left: auto;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .badge-check  { background:rgba(32,201,151,0.12); color:#63e6be; border:1px solid rgba(32,201,151,0.3); }
+    .badge-blue   { background:rgba(13,110,253,0.12); color:#4da3ff; border:1px solid rgba(13,110,253,0.3); }
+    .badge-purple { background:rgba(111,66,193,0.12); color:#c084fc; border:1px solid rgba(111,66,193,0.3); }
+    .badge-orange { background:rgba(253,126,20,0.12); color:#ffa94d; border:1px solid rgba(253,126,20,0.3); }
+    .badge-green  { background:rgba(32,201,151,0.15); color:#51cf66; border:1px solid rgba(32,201,151,0.4); }
+    .badge-red    { background:rgba(220,53,69,0.12);  color:#ff6b6b; border:1px solid rgba(220,53,69,0.3); }
+
+    .step-body {
+      padding: 20px 22px;
+    }
+    .step-desc {
+      font-size: 0.83rem;
+      color: #8b949e;
+      margin: 0 0 10px;
+      line-height: 1.6;
+    }
+    .step-desc strong { color: #c9d1d9; }
+
+    /* ── Command blocks ── */
+    .cmd-block {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .cmd-block-main {
+      border-color: rgba(13,110,253,0.4);
+      background: rgba(13,110,253,0.04);
+      padding: 14px 18px;
+    }
+    .cmd-block-main .cmd-code {
+      font-size: 1rem !important;
+      color: #79c0ff !important;
+    }
+    .cmd-prompt {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.76rem;
+      color: #3d444d;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .cmd-code {
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      color: #e6edf3;
+      flex: 1;
+      word-break: break-all;
+    }
+    .cmd-copy {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #8b949e;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      margin-left: auto;
+    }
+    .cmd-copy:hover { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+    .cmd-copy.copied { background: #1a7a42; color: #63e6be; border-color: #1a7a42; }
+    .cmd-output {
+      background: #0a0e17;
+      border: 1px solid #21262d;
+      border-left: 3px solid #1a4a2e;
+      border-radius: 0 6px 6px 0;
+      padding: 10px 14px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.76rem;
+      color: #8b949e;
+      margin-bottom: 12px;
+      line-height: 1.7;
+    }
+
+    /* ── File tree ── */
+    .file-tree {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: #8b949e;
+      margin: 12px 0;
+    }
+    .ft-root { color: #e1e4e8; font-weight: 700; margin-bottom: 6px; }
+    .ft-item { padding: 2px 0; }
+    .ft-note { color: #3d444d; font-size: 0.72rem; margin-left: 6px; }
+
+    /* ── Dependencies grid ── */
+    .deps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .dep-item {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      padding: 12px 14px;
+      text-align: center;
+    }
+    .dep-icon { display: block; font-size: 1.4rem; margin-bottom: 6px; }
+    .dep-name {
+      display: block;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.78rem;
+      color: #79c0ff;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+    .dep-desc { display: block; font-size: 0.7rem; color: #8b949e; }
+
+    /* ── Info row ── */
+    .info-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .info-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .info-title { font-size: 0.82rem; font-weight: 700; color: #e1e4e8; margin-bottom: 3px; }
+    .info-desc  { font-size: 0.76rem; color: #8b949e; line-height: 1.5; }
+
+    /* ── Error grid ── */
+    .error-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .error-item {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-left: 3px solid #6e2626;
+      border-radius: 0 8px 8px 0;
+      padding: 14px 16px;
+    }
+    .error-code {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.78rem;
+      color: #ff6b6b;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .error-solution {
+      font-size: 0.8rem;
+      color: #8b949e;
+      line-height: 1.6;
+    }
+    .error-solution strong { color: #c9d1d9; }
+
+    /* ── Success banner ── */
+    .success-banner {
+      background: rgba(26,122,66,0.1);
+      border: 1px solid rgba(32,201,151,0.25);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.82rem;
+      color: #63e6be;
+      margin-top: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── kbd style ── */
+    kbd {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.78rem;
+      color: #e1e4e8;
+    }
+
+    /* ── Responsive tweaks ── */
+    @media (max-width: 640px) {
+      .hero { padding: 40px 20px 36px; }
+      .main-wrap { padding: 24px 14px 40px; }
+      .flow-steps { flex-direction: column; align-items: flex-start; }
+      .flow-arrow { transform: rotate(90deg); }
+      .step-header { gap: 10px; }
+      .step-badge { font-size: 0.65rem; padding: 3px 8px; }
+      .cmd-block { flex-wrap: wrap; }
+      .cmd-copy { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ HERO -->
+<div class="hero">
+  <div class="hero-badge">24-h Hackathon · Inibsa · Dental &amp; Pharma</div>
+  <h1>💊 Smart Demand Signals</h1>
+  <p>
+    Production-ready <strong>app.py</strong> — a 100 % explainable, Pandas-only
+    commercial alert engine with a Streamlit dashboard &amp; ML feedback loop mock-up.
+    Zero black-box models. Every alert is traceable to a named statistical rule.
+  </p>
+  <div class="pill-row">
+    <span class="pill">🐍 Python 3.10+</span>
+    <span class="pill">📊 Pandas</span>
+    <span class="pill">🌊 Streamlit</span>
+    <span class="pill">🔍 100% Explainable</span>
+    <span class="pill">🔄 Feedback Loop</span>
+    <span class="pill">⚡ Zero ML Black-box</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ MAIN -->
+<div class="main-wrap">
+
+  <!-- ══════════════════════════════════════════════════════════════
+       🚀 GUÍA DE EJECUCIÓN COMPLETA
+  ══════════════════════════════════════════════════════════════ -->
+  <p class="section-title">🚀 Cómo Ejecutarlo — Guía Paso a Paso</p>
+
+  <!-- OS Tabs -->
+  <div class="os-tabs">
+    <button class="os-tab active" onclick="switchOS('win')">🪟 Windows</button>
+    <button class="os-tab" onclick="switchOS('mac')">🍎 macOS</button>
+    <button class="os-tab" onclick="switchOS('lin')">🐧 Linux</button>
+  </div>
+
+  <!-- PASO 0 — Requisitos previos -->
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num">0</span>
+      <div>
+        <div class="step-title">Requisitos Previos</div>
+        <div class="step-sub">Comprueba que tienes Python instalado</div>
+      </div>
+      <span class="step-badge badge-check">✔ Prereq</span>
+    </div>
+    <div class="step-body">
+      <p class="step-desc">Necesitas <strong>Python 3.9 o superior</strong>. Compruébalo con:</p>
+      <div class="cmd-block">
+        <span class="cmd-prompt os-win os-mac os-lin">$</span>
+        <code class="cmd-code">python --version</code>
+        <button class="cmd-copy" onclick="copyCmd(this, 'python --version')">Copiar</button>
+      </div>
+      <div class="cmd-output">→ Deberías ver algo como: <span style="color:#63e6be">Python 3.11.4</span><br>
+        Si no tienes Python: <a href="https://www.python.org/downloads/" target="_blank" style="color:#4da3ff;text-decoration:underline;">python.org/downloads</a></div>
+
+      <p class="step-desc" style="margin-top:16px">Comprueba también <strong>pip</strong>:</p>
+      <div class="cmd-block">
+        <span class="cmd-prompt">$</span>
+        <code class="cmd-code">pip --version</code>
+        <button class="cmd-copy" onclick="copyCmd(this, 'pip --version')">Copiar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASO 1 — Crear carpeta del proyecto -->
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num">1</span>
+      <div>
+        <div class="step-title">Crea la Carpeta del Proyecto</div>
+        <div class="step-sub">Organiza todos los archivos en un mismo lugar</div>
+      </div>
+      <span class="step-badge badge-blue">📁 Setup</span>
+    </div>
+    <div class="step-body">
+      <p class="step-desc">Crea una carpeta llamada <code style="color:#79c0ff">smart_demand_signals</code> y entra en ella:</p>
+
+      <div class="os-content os-win active-os">
+        <div class="cmd-block">
+          <span class="cmd-prompt">C:\&gt;</span>
+          <code class="cmd-code">mkdir smart_demand_signals && cd smart_demand_signals</code>
+          <button class="cmd-copy" onclick="copyCmd(this, 'mkdir smart_demand_signals && cd smart_demand_signals')">Copiar</button>
+        </div>
+      </div>
+      <div class="os-content os-mac" style="display:none">
+        <div class="cmd-block">
+          <span class="cmd-prompt">~$</span>
+          <code class="cmd-code">mkdir smart_demand_signals && cd smart_demand_signals</code>
+          <button class="cmd-copy" onclick="copyCmd(this, 'mkdir smart_demand_signals && cd smart_demand_signals')">Copiar</button>
+        </div>
+      </div>
+      <div class="os-content os-lin" style="display:none">
+        <div class="cmd-block">
+          <span class="cmd-prompt">~$</span>
+          <code class="cmd-code">mkdir smart_demand_signals && cd smart_demand_signals</code>
+          <button class="cmd-copy" onclick="copyCmd(this, 'mkdir smart_demand_signals && cd smart_demand_signals')">Copiar</button>
+        </div>
+      </div>
+
+      <div class="file-tree">
+        <div class="ft-root">📁 smart_demand_signals/</div>
+        <div class="ft-item">├── 📄 <span style="color:#79c0ff">app.py</span> <span class="ft-note">← el script que acabas de generar</span></div>
+        <div class="ft-item">└── 📊 <span style="color:#63e6be">database_clean.xlsx</span> <span class="ft-note">← tu dataset</span></div>
+      </div>
+      <p class="step-desc" style="margin-top:10px">Copia <strong>app.py</strong> (usa el botón "Copy app.py" de arriba) y <strong>database_clean.xlsx</strong> dentro de esta carpeta.</p>
+    </div>
+  </div>
+
+  <!-- PASO 2 — Entorno virtual -->
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num">2</span>
+      <div>
+        <div class="step-title">Crea un Entorno Virtual <span style="font-weight:400;font-size:0.8rem;color:#8b949e">(muy recomendado)</span></div>
+        <div class="step-sub">Aísla las dependencias del proyecto del sistema global</div>
+      </div>
+      <span class="step-badge badge-purple">🔒 venv</span>
+    </div>
+    <div class="step-body">
+
+      <div class="os-content os-win active-os">
+        <p class="step-desc">Crear el entorno:</p>
+        <div class="cmd-block">
+          <span class="cmd-prompt">C:\smart_demand_signals&gt;</span>
+          <code class="cmd-code">python -m venv venv</code>
+          <button class="cmd-copy" onclick="copyCmd(this, 'python -m venv venv')">Copiar</button>
+        </div>
+        <p class="step-desc">Activarlo:</p>
+        <div class="cmd-block">
+          <span class="cmd-prompt">C:\smart_demand_signals&gt;</span>
+          <code class="cmd-code">venv\Scripts\activate</code>
+          <button class="cmd-copy" onclick="copyCmd(this, 'venv\\Scripts\\activate')">Copiar</button>
+        </div>
+        <div class="cmd-output">→ Verás <span style="color:#63e6be">(venv)</span> al inicio del prompt cuando esté activo</div>
+      </div>
+
+      <div class="os-content os-mac" style="display:none">
+        <p class="step-desc">Crear el entorno:</p>
+        <div class="cmd-block">
+          <span class="cmd-prompt">~/smart_demand_signals$</span>
+          <code class="cmd-code">python3 -m venv venv</code>
+          <button class="cmd-copy" onclick="copyCmd(this, 'python3 -m venv venv')">Copiar</button>
+        </div>
+        <p class="step-desc">Activarlo:</p>
+        <div class="cmd-block">
+          <span class="cmd-prompt">~/smart_demand_signals$</span>
+          <code class="cmd-code">source venv/bin/activate</code>
+          <button class="cmd-copy" onclick="copyCmd(this, 'source venv/bin/activate')">Copiar</button>
+        </div>
+        <div class="cmd-output">→ Verás <span style="color:#63e6be">(venv)</span> al inicio del prompt cuando esté activo</div>
+      </div>
+
+      <div class="os-content os-lin" style="display:none">
+        <p class="step-desc">Crear el entorno:</p>
+        <div class="cmd-block">
+          <span class="cmd-prompt">~/smart_demand_signals$</span>
+          <code class="cmd-code">python3 -m venv venv</code>
+          <button class="cmd-copy" onclick="copyCmd(this, 'python3 -m venv venv')">Copiar</button>
+        </div>
+        <p class="step-desc">Activarlo:</p>
+        <div class="cmd-block">
+          <span class="cmd-prompt">~/smart_demand_signals$</span>
+          <code class="cmd-code">source venv/bin/activate</code>
+          <button class="cmd-copy" onclick="copyCmd(this, 'source venv/bin/activate')">Copiar</button>
+        </div>
+        <div class="cmd-output">→ Verás <span style="color:#63e6be">(venv)</span> al inicio del prompt cuando esté activo</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PASO 3 — Instalar dependencias -->
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num">3</span>
+      <div>
+        <div class="step-title">Instala las Dependencias</div>
+        <div class="step-sub">4 librerías — se instalan en ~30 segundos</div>
+      </div>
+      <span class="step-badge badge-orange">📦 pip install</span>
+    </div>
+    <div class="step-body">
+      <p class="step-desc">Con el entorno virtual activo, ejecuta:</p>
+      <div class="cmd-block">
+        <span class="cmd-prompt">(venv) $</span>
+        <code class="cmd-code">pip install streamlit pandas openpyxl xlrd</code>
+        <button class="cmd-copy" onclick="copyCmd(this, 'pip install streamlit pandas openpyxl xlrd')">Copiar</button>
+      </div>
+      <div class="cmd-output">→ Verás el progreso de descarga. Al terminar: <span style="color:#63e6be">Successfully installed streamlit-X.X pandas-X.X ...</span></div>
+
+      <div class="deps-grid">
+        <div class="dep-item">
+          <span class="dep-icon">🌊</span>
+          <span class="dep-name">streamlit</span>
+          <span class="dep-desc">Dashboard web</span>
+        </div>
+        <div class="dep-item">
+          <span class="dep-icon">🐼</span>
+          <span class="dep-name">pandas</span>
+          <span class="dep-desc">Motor analítico</span>
+        </div>
+        <div class="dep-item">
+          <span class="dep-icon">📗</span>
+          <span class="dep-name">openpyxl</span>
+          <span class="dep-desc">Leer .xlsx</span>
+        </div>
+        <div class="dep-item">
+          <span class="dep-icon">📘</span>
+          <span class="dep-name">xlrd</span>
+          <span class="dep-desc">Leer .xls legacy</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASO 4 — Ejecutar la app -->
+  <div class="step-card step-card-highlight">
+    <div class="step-header">
+      <span class="step-num" style="background:linear-gradient(135deg,#0d6efd,#6f42c1)">4</span>
+      <div>
+        <div class="step-title">¡Ejecuta la Aplicación! 🚀</div>
+        <div class="step-sub">Un solo comando lanza el servidor y abre el navegador</div>
+      </div>
+      <span class="step-badge badge-green">▶ Lanzar</span>
+    </div>
+    <div class="step-body">
+      <p class="step-desc">Desde la carpeta <code style="color:#79c0ff">smart_demand_signals/</code>, con el entorno activo:</p>
+      <div class="cmd-block cmd-block-main">
+        <span class="cmd-prompt">(venv) $</span>
+        <code class="cmd-code">streamlit run app.py</code>
+        <button class="cmd-copy" onclick="copyCmd(this, 'streamlit run app.py')">Copiar</button>
+      </div>
+      <div class="cmd-output" style="border-color:rgba(13,110,253,0.3);background:rgba(13,110,253,0.05);">
+        <span style="color:#63e6be">✔</span> You can now view your Streamlit app in your browser.<br><br>
+        &nbsp;&nbsp;Local URL:&nbsp;&nbsp;<a href="http://localhost:8501" target="_blank" style="color:#4da3ff;text-decoration:underline;">http://localhost:8501</a><br>
+        &nbsp;&nbsp;Network URL: <span style="color:#8b949e">http://192.168.x.x:8501</span>
+      </div>
+
+      <div class="info-row">
+        <div class="info-item">
+          <span class="info-icon">🌐</span>
+          <div>
+            <div class="info-title">Se abre automáticamente</div>
+            <div class="info-desc">Streamlit abre tu navegador en <code style="color:#79c0ff">localhost:8501</code> solo</div>
+          </div>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">📊</span>
+          <div>
+            <div class="info-title">Carga el dataset</div>
+            <div class="info-desc">Usa el sidebar izquierdo para subir <code style="color:#79c0ff">database_clean.xlsx</code> o colócalo junto a app.py</div>
+          </div>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">🔄</span>
+          <div>
+            <div class="info-title">Hot-reload automático</div>
+            <div class="info-desc">Si editas app.py, Streamlit detecta los cambios y recarga</div>
+          </div>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">⛔</span>
+          <div>
+            <div class="info-title">Para detenerlo</div>
+            <div class="info-desc">Pulsa <kbd>Ctrl</kbd> + <kbd>C</kbd> en la terminal</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASO 5 — Errores frecuentes -->
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num" style="background:#6e2626">!</span>
+      <div>
+        <div class="step-title">Errores Frecuentes y Soluciones</div>
+        <div class="step-sub">Si algo no va bien, aquí está la respuesta</div>
+      </div>
+      <span class="step-badge badge-red">🐛 Troubleshoot</span>
+    </div>
+    <div class="step-body">
+      <div class="error-grid">
+
+        <div class="error-item">
+          <div class="error-code">'streamlit' is not recognized</div>
+          <div class="error-solution">
+            <strong>Causa:</strong> El entorno virtual no está activo.<br>
+            <strong>Fix:</strong>
+            <div class="cmd-block" style="margin-top:6px">
+              <code class="cmd-code os-win-inline">venv\Scripts\activate</code>
+              <code class="cmd-code os-mac-inline" style="display:none">source venv/bin/activate</code>
+              <button class="cmd-copy" onclick="copyCmd(this, 'source venv/bin/activate')">Copiar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="error-item">
+          <div class="error-code">ModuleNotFoundError: No module named 'openpyxl'</div>
+          <div class="error-solution">
+            <strong>Causa:</strong> Falta instalar dependencias.<br>
+            <strong>Fix:</strong>
+            <div class="cmd-block" style="margin-top:6px">
+              <code class="cmd-code">pip install openpyxl xlrd</code>
+              <button class="cmd-copy" onclick="copyCmd(this, 'pip install openpyxl xlrd')">Copiar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="error-item">
+          <div class="error-code">FileNotFoundError: database_clean.xlsx</div>
+          <div class="error-solution">
+            <strong>Causa:</strong> El dataset no está en la carpeta del proyecto.<br>
+            <strong>Fix:</strong> Copia el archivo Excel/CSV junto a app.py, <em>o</em> súbelo desde el sidebar de la app.
+          </div>
+        </div>
+
+        <div class="error-item">
+          <div class="error-code">Port 8501 is already in use</div>
+          <div class="error-solution">
+            <strong>Causa:</strong> Ya hay otra app Streamlit corriendo.<br>
+            <strong>Fix:</strong>
+            <div class="cmd-block" style="margin-top:6px">
+              <code class="cmd-code">streamlit run app.py --server.port 8502</code>
+              <button class="cmd-copy" onclick="copyCmd(this, 'streamlit run app.py --server.port 8502')">Copiar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="error-item">
+          <div class="error-code">No alerts generated</div>
+          <div class="error-solution">
+            <strong>Causa:</strong> El dataset no tiene suficiente historial (mínimo 2 compras por par Cliente/Familia para calcular Days_Between).<br>
+            <strong>Fix:</strong> Verifica que la columna <code style="color:#79c0ff">Fecha</code> tiene fechas correctas y hay registros repetidos por cliente.
+          </div>
+        </div>
+
+        <div class="error-item">
+          <div class="error-code">KeyError: 'Id.Cliente' / 'Familia_H'</div>
+          <div class="error-solution">
+            <strong>Causa:</strong> Las columnas de tu Excel tienen nombres ligeramente distintos (espacios, mayúsculas…).<br>
+            <strong>Fix:</strong> Abre el Excel, comprueba los encabezados exactos y ajusta el <code style="color:#79c0ff">rename_map</code> en app.py línea ~85.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Estructura de archivos final -->
+  <div class="step-card" style="border-color:#21262d">
+    <div class="step-header">
+      <span class="step-num" style="background:#1f4a2e">✓</span>
+      <div>
+        <div class="step-title">Estructura Final del Proyecto</div>
+        <div class="step-sub">Cómo debe quedar tu carpeta antes de ejecutar</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="file-tree" style="font-size:0.88rem">
+        <div class="ft-root">📁 smart_demand_signals/</div>
+        <div class="ft-item">├── 📄 <span style="color:#79c0ff">app.py</span> <span class="ft-note">← script principal (cópialo desde arriba)</span></div>
+        <div class="ft-item">├── 📊 <span style="color:#63e6be">database_clean.xlsx</span> <span class="ft-note">← o .csv — tu dataset de Inibsa</span></div>
+        <div class="ft-item">└── 📁 <span style="color:#8b949e">venv/</span> <span class="ft-note">← entorno virtual (creado en paso 2)</span></div>
+      </div>
+      <div class="success-banner">
+        🎉 Con esta estructura, <code>streamlit run app.py</code> funciona directamente. La app detecta el Excel automáticamente o puedes subirlo desde el sidebar.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Architecture Overview ── -->
+  <p class="section-title" style="margin-top:36px">🏗️ Pipeline Architecture</p>
+  <div class="arch-grid">
+    <div class="arch-card c1">
+      <span class="arch-icon">📂</span>
+      <div class="arch-step">Step 1</div>
+      <h3>Data Prep &amp; Mapping</h3>
+      <p>Load XLSX/CSV, rename columns to English, classify Analytical Block (Commodities vs Technical), compute Loyalty Factor, aggregate at Client×Date×Family grain, calculate Days_Between.</p>
+    </div>
+    <div class="arch-card c2">
+      <span class="arch-icon">📐</span>
+      <div class="arch-step">Step 2</div>
+      <h3>Statistical Baselines</h3>
+      <p>Per-pair Mean &amp; Std for Quantity and Days_Between. Cold-start fallback: &lt; 3 purchases → use global Product Family stats.</p>
+    </div>
+    <div class="arch-card c3">
+      <span class="arch-icon">🚨</span>
+      <div class="arch-step">Step 3</div>
+      <h3>Alert Logic</h3>
+      <p>Rule A (Capture Window) for Promiscuous Commodity clients. Rule B (Churn Risk) for Technical products — time delay + volume drop signals.</p>
+    </div>
+    <div class="arch-card c4">
+      <span class="arch-icon">🎯</span>
+      <div class="arch-step">Step 4</div>
+      <h3>Priority Score</h3>
+      <p>Raw score = Avg Transaction Value × delay multiplier. Min-Max normalised to 1–100 → <em>Nivel de Riesgo</em> column.</p>
+    </div>
+    <div class="arch-card c5">
+      <span class="arch-icon">🖥️</span>
+      <div class="arch-step">Step 5</div>
+      <h3>Streamlit UI</h3>
+      <p>Interactive dashboard with KPI cards, sidebar filters, editable alert table with SelectboxColumn, feedback CSV export, and drill-down expanders.</p>
+    </div>
+  </div>
+
+  <!-- ── Decision Rules ── -->
+  <p class="section-title">⚖️ Decision Rules — Full Explainability</p>
+  <div class="rules-grid">
+    <div class="rule-box rule-a">
+      <span class="tag tag-orange">Rule A · Commodities</span>
+      <h4>🟠 Ventana de Captura</h4>
+      <div class="formula">Block  == 'Commodities'
+AND Loyalty == 'Promiscuous'
+AND Days_Since_Last >= Mean_Days
+
+Opportunity = Client_Potential
+            − Average_Monthly_Spend</div>
+      <p>Client should have reordered by now. Likely buying from a competitor. Classic window for competitor displacement.</p>
+    </div>
+    <div class="rule-box rule-b">
+      <span class="tag tag-red">Rule B · Technical</span>
+      <h4>🔴 Churn Risk — Two Signals</h4>
+      <div class="formula">Expected_Days = Mean_Days
+              × (Last_Qty / Mean_Qty)
+
+Time  → Days_Since_Last
+        > Expected_Days + 1.5 × Std_Days
+        → "Retraso anómalo en tiempo"
+
+Volume → Last_Qty
+         &lt; Mean_Qty − 1.0 × Std_Qty
+         → "Caída drástica de volumen"
+
+Opportunity = Average_Monthly_Spend</div>
+      <p>Bulk-adjusted time threshold prevents false alarms on large orders. Volume signal catches early disengagement.</p>
+    </div>
+    <div class="rule-box rule-p">
+      <span class="tag tag-blue">Step 4 · Score</span>
+      <h4>🎯 Nivel de Riesgo (1–100)</h4>
+      <div class="formula">Raw = Avg_Transaction_Value
+    × (1 + Days_Delayed / Mean_Days)
+
+Nivel_Riesgo =
+  1 + 99 × (Raw − min) / (max − min)
+
+→ rounded to 0 decimals</div>
+      <p>Higher monetary value + longer overdue delay = higher urgency score. Perfectly min-max bounded for sales team prioritisation.</p>
+    </div>
+  </div>
+
+  <!-- ── Feedback Loop ── -->
+  <p class="section-title">🔄 ML Feedback Loop Mock-up</p>
+  <div class="feedback-loop">
+    <h3>Closing the Loop — From Rules to Learning</h3>
+    <p>
+      The <strong>Register Action</strong> column in the alert table is a
+      <code>st.column_config.SelectboxColumn</code> that lets sales reps label every alert in real time.
+      Labeled exports feed future threshold calibration or supervised model training.
+    </p>
+    <div class="flow-steps">
+      <div class="flow-step">📡 Alert fired</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">🧑‍💼 Rep acts</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">📝 Labels outcome<br><small style="color:#4da3ff;font-size:0.7rem">✅ Success / ❌ FP / ⏳ Pending</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">⬇️ Download CSV</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">🔬 Retrain thresholds<br><small style="color:#4da3ff;font-size:0.7rem">or train classifier</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">🚀 Better alerts</div>
+    </div>
+  </div>
+
+  <!-- ── Code viewer ── -->
+  <p class="section-title">📄 Complete app.py — Production Code</p>
+  <div class="code-toolbar">
+    <div class="code-toolbar-left">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <span class="file-label">app.py</span>
+    </div>
+    <div class="toolbar-pills">
+      <span class="toolbar-pill">~430 lines</span>
+      <span class="toolbar-pill">5 steps</span>
+      <span class="toolbar-pill">Python 3.10+</span>
+      <span class="toolbar-pill">Pandas + Streamlit</span>
+    </div>
+    <button class="btn-copy" id="copyBtn" onclick="copyCode()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+      Copy app.py
+    </button>
+  </div>
+  <div class="code-wrap">
+    <div class="code-scroll" id="codeScroll">
+      <div class="hljs-wrapper">
+        <div class="line-numbers" id="lineNumbers"></div>
+        <div class="code-inner">
+          <pre><code class="language-python" id="codeBlock"></code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Column mapping ── -->
+  <p class="section-title" style="margin-top:40px">🗂️ Column Mapping</p>
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+      <thead>
+        <tr style="background:#161b22;border-bottom:1px solid #30363d;">
+          <th style="padding:10px 16px;text-align:left;color:#8b949e;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;font-size:0.7rem;">Raw Column (Spanish)</th>
+          <th style="padding:10px 16px;text-align:left;color:#8b949e;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;font-size:0.7rem;">English Name</th>
+          <th style="padding:10px 16px;text-align:left;color:#8b949e;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;font-size:0.7rem;">Type</th>
+          <th style="padding:10px 16px;text-align:left;color:#8b949e;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;font-size:0.7rem;">Role in Engine</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #21262d;">
+          <td style="padding:10px 16px;font-family:monospace;color:#79c0ff;">Id.Cliente</td>
+          <td style="padding:10px 16px;color:#e1e4e8;font-weight:600;">Client_ID</td>
+          <td style="padding:10px 16px;color:#8b949e;">string</td>
+          <td style="padding:10px 16px;color:#8b949e;">Grouping key — all analysis scoped per client</td>
+        </tr>
+        <tr style="border-bottom:1px solid #21262d;background:#0d1117;">
+          <td style="padding:10px 16px;font-family:monospace;color:#79c0ff;">Fecha</td>
+          <td style="padding:10px 16px;color:#e1e4e8;font-weight:600;">Date</td>
+          <td style="padding:10px 16px;color:#8b949e;">datetime</td>
+          <td style="padding:10px 16px;color:#8b949e;">Chronological sort, Days_Between, Days_Since_Last</td>
+        </tr>
+        <tr style="border-bottom:1px solid #21262d;">
+          <td style="padding:10px 16px;font-family:monospace;color:#79c0ff;">Familia_H</td>
+          <td style="padding:10px 16px;color:#e1e4e8;font-weight:600;">Product_Family</td>
+          <td style="padding:10px 16px;color:#8b949e;">string</td>
+          <td style="padding:10px 16px;color:#8b949e;">Block classification (Commodities / Technical)</td>
+        </tr>
+        <tr style="border-bottom:1px solid #21262d;background:#0d1117;">
+          <td style="padding:10px 16px;font-family:monospace;color:#79c0ff;">Unidades</td>
+          <td style="padding:10px 16px;color:#e1e4e8;font-weight:600;">Quantity</td>
+          <td style="padding:10px 16px;color:#8b949e;">float</td>
+          <td style="padding:10px 16px;color:#8b949e;">Mean_Qty, Std_Qty, volume drop signal</td>
+        </tr>
+        <tr style="border-bottom:1px solid #21262d;">
+          <td style="padding:10px 16px;font-family:monospace;color:#79c0ff;">Valores_H</td>
+          <td style="padding:10px 16px;color:#e1e4e8;font-weight:600;">Transaction_Value</td>
+          <td style="padding:10px 16px;color:#8b949e;">float (€)</td>
+          <td style="padding:10px 16px;color:#8b949e;">Avg_Monthly_Spend, priority score, opportunity</td>
+        </tr>
+        <tr style="background:#0d1117;">
+          <td style="padding:10px 16px;font-family:monospace;color:#79c0ff;">Potencial_H</td>
+          <td style="padding:10px 16px;color:#e1e4e8;font-weight:600;">Client_Potential</td>
+          <td style="padding:10px 16px;color:#8b949e;">float (€)</td>
+          <td style="padding:10px 16px;color:#8b949e;">Loyalty threshold (0.85×), Rule A opportunity value</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Footer ── -->
+  <div style="text-align:center;margin-top:56px;padding-top:20px;border-top:1px solid #21262d;">
+    <p style="color:#3d444d;font-size:0.75rem;margin:0;">
+      Smart Demand Signals v1.0 &nbsp;·&nbsp; Inibsa Dental &amp; Pharma
+      &nbsp;·&nbsp; 24-h Hackathon &nbsp;·&nbsp; Pandas + Streamlit &nbsp;·&nbsp; Zero black-box ML
+    </p>
+  </div>
+
+</div><!-- /main-wrap -->
+
+<script>
+// ── The complete app.py source code ──────────────────────────────────────────
+const CODE = `# =============================================================================
+#  Smart Demand Signals — app.py
+#  Author : Lead Data Scientist / Python-Streamlit Architect
+#  Client : Inibsa (Dental / Pharmaceutical)
+#  Purpose: 24-h Hackathon — 100 % explainable, Pandas-only alert engine
+#           + Streamlit dashboard with ML-feedback loop mock-up
+# =============================================================================
+
+# ── Dependencies ──────────────────────────────────────────────────────────────
+# pip install streamlit pandas openpyxl xlrd
+# Run: streamlit run app.py
+# =============================================================================
+
+import pandas as pd
+import streamlit as st
+import os
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 0.  PAGE CONFIG  (must be the very first Streamlit call)
+# ─────────────────────────────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="Smart Demand Signals · Inibsa",
+    page_icon="💊",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CUSTOM CSS — polished look that works on both light and dark themes
+# ─────────────────────────────────────────────────────────────────────────────
+st.markdown(
+    """
+    <style>
+        html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+        .banner {
+            background: linear-gradient(135deg, #1a3a5c 0%, #0d6efd 100%);
+            border-radius: 12px;
+            padding: 24px 32px;
+            margin-bottom: 24px;
+            color: #fff;
+        }
+        .banner h1 { margin: 0; font-size: 2rem; font-weight: 700; }
+        .banner p  { margin: 4px 0 0; font-size: 0.95rem; opacity: 0.85; }
+        .kpi-card {
+            background: #f0f4ff;
+            border: 1px solid #c9d9f7;
+            border-radius: 10px;
+            padding: 18px 22px;
+            text-align: center;
+        }
+        .kpi-card .kpi-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #0d6efd;
+        }
+        .kpi-card .kpi-label {
+            font-size: 0.8rem;
+            color: #555;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a3a5c;
+            border-left: 4px solid #0d6efd;
+            padding-left: 10px;
+            margin: 20px 0 10px;
+        }
+        section[data-testid="stSidebar"] { background: #f7f9ff; }
+        .sidebar-logo {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #1a3a5c;
+            margin-bottom: 4px;
+        }
+        .sidebar-sub { font-size: 0.75rem; color: #666; margin-bottom: 20px; }
+        .footer {
+            text-align: center;
+            font-size: 0.72rem;
+            color: #aaa;
+            margin-top: 40px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 1 — DATA LOADING & PREPARATION
+# ─────────────────────────────────────────────────────────────────────────────
+
+@st.cache_data(show_spinner="📂  Loading dataset…")
+def load_raw_data(path: str) -> pd.DataFrame:
+    """
+    Load database_clean.xlsx (preferred) or database_clean.csv.
+    Renames Spanish column headers to English equivalents.
+    """
+    ext = os.path.splitext(path)[1].lower()
+    if ext in (".xlsx", ".xls"):
+        df = pd.read_excel(path)
+    else:
+        df = pd.read_csv(path, sep=None, engine="python")
+
+    rename_map = {
+        "Id.Cliente"  : "Client_ID",
+        "Fecha"       : "Date",
+        "Familia_H"   : "Product_Family",
+        "Unidades"    : "Quantity",
+        "Valores_H"   : "Transaction_Value",
+        "Potencial_H" : "Client_Potential",
+    }
+    df = df.rename(columns=rename_map)
+
+    df["Date"]              = pd.to_datetime(df["Date"], dayfirst=True, errors="coerce")
+    df["Quantity"]          = pd.to_numeric(df["Quantity"],          errors="coerce")
+    df["Transaction_Value"] = pd.to_numeric(df["Transaction_Value"], errors="coerce")
+    df["Client_Potential"]  = pd.to_numeric(df["Client_Potential"],  errors="coerce")
+
+    df = df.dropna(subset=["Client_ID", "Date", "Product_Family",
+                            "Quantity", "Transaction_Value"])
+    return df
+
+
+def classify_block(product_family: str) -> str:
+    """
+    Rule-based classifier (100 % explainable — no ML):
+      • Contains 'ANESTE', 'AGUJA', or 'DESINFEC' → 'Commodities'
+      • Everything else                            → 'Technical'
+    """
+    pf_upper = str(product_family).upper()
+    commodity_keywords = ("ANESTE", "AGUJA", "DESINFEC")
+    if any(kw in pf_upper for kw in commodity_keywords):
+        return "Commodities"
+    return "Technical"
+
+
+def compute_loyalty(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Average_Monthly_Spend  = mean Transaction_Value per Client_ID.
+    Loyal      → Average_Monthly_Spend >= 0.85 × Client_Potential
+    Promiscuous → below that threshold
+    """
+    avg_spend = (
+        df.groupby("Client_ID")["Transaction_Value"]
+        .mean()
+        .rename("Average_Monthly_Spend")
+        .reset_index()
+    )
+    df = df.merge(avg_spend, on="Client_ID", how="left")
+
+    pot_ref = (
+        df.groupby("Client_ID")["Client_Potential"]
+        .max()
+        .rename("Max_Potential")
+        .reset_index()
+    )
+    df = df.merge(pot_ref, on="Client_ID", how="left")
+
+    df["Loyalty_Factor"] = df.apply(
+        lambda r: "Loyal"
+        if r["Average_Monthly_Spend"] >= 0.85 * r["Max_Potential"]
+        else "Promiscuous",
+        axis=1,
+    )
+    return df
+
+
+def add_analytical_block(df: pd.DataFrame) -> pd.DataFrame:
+    df["Analytical_Block"] = df["Product_Family"].apply(classify_block)
+    return df
+
+
+def aggregate_data(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Collapse to the grain: Client_ID × Date × Product_Family.
+    Sum Quantity and Transaction_Value.
+    """
+    agg = (
+        df.groupby(["Client_ID", "Date", "Product_Family"], as_index=False)
+        .agg(
+            Quantity             = ("Quantity",             "sum"),
+            Transaction_Value    = ("Transaction_Value",    "sum"),
+            Average_Monthly_Spend= ("Average_Monthly_Spend","first"),
+            Max_Potential        = ("Max_Potential",        "first"),
+            Loyalty_Factor       = ("Loyalty_Factor",       "first"),
+            Analytical_Block     = ("Analytical_Block",     "first"),
+        )
+        .sort_values(["Client_ID", "Product_Family", "Date"])
+        .reset_index(drop=True)
+    )
+
+    # Days_Between consecutive purchases (per Client/Family pair)
+    agg["Days_Between"] = (
+        agg.groupby(["Client_ID", "Product_Family"])["Date"]
+        .diff()
+        .dt.days
+    )
+    return agg
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 2 — STATISTICAL BASELINES & COLD-START FALLBACK
+# ─────────────────────────────────────────────────────────────────────────────
+
+def compute_baselines(agg: pd.DataFrame) -> pd.DataFrame:
+    """
+    For each Client × Family pair:
+      - Mean_Qty, Std_Qty    (from Quantity)
+      - Mean_Days, Std_Days  (from Days_Between)
+    Cold-start: < 3 purchases → fall back to global Product Family stats.
+    """
+    pair_stats = (
+        agg.groupby(["Client_ID", "Product_Family"])
+        .agg(
+            Purchase_Count = ("Quantity",          "count"),
+            Mean_Qty       = ("Quantity",          "mean"),
+            Std_Qty        = ("Quantity",          "std"),
+            Mean_Days      = ("Days_Between",      "mean"),
+            Std_Days       = ("Days_Between",      "std"),
+            Avg_Txn_Value  = ("Transaction_Value", "mean"),
+        )
+        .reset_index()
+    )
+
+    global_stats = (
+        agg.groupby("Product_Family")
+        .agg(
+            Global_Mean_Qty  = ("Quantity",     "mean"),
+            Global_Std_Qty   = ("Quantity",     "std"),
+            Global_Mean_Days = ("Days_Between", "mean"),
+            Global_Std_Days  = ("Days_Between", "std"),
+        )
+        .reset_index()
+    )
+
+    pair_stats = pair_stats.merge(global_stats, on="Product_Family", how="left")
+
+    cold = pair_stats["Purchase_Count"] < 3
+    pair_stats.loc[cold, "Std_Qty"]   = pair_stats.loc[cold, "Global_Std_Qty"]
+    pair_stats.loc[cold, "Std_Days"]  = pair_stats.loc[cold, "Global_Std_Days"]
+    pair_stats.loc[cold, "Mean_Qty"]  = pair_stats.loc[cold, "Global_Mean_Qty"]
+    pair_stats.loc[cold, "Mean_Days"] = pair_stats.loc[cold, "Global_Mean_Days"]
+
+    pair_stats["Std_Qty"]  = pair_stats["Std_Qty"].fillna(0)
+    pair_stats["Std_Days"] = pair_stats["Std_Days"].fillna(0)
+
+    pair_stats = pair_stats.drop(
+        columns=["Global_Mean_Qty", "Global_Std_Qty",
+                 "Global_Mean_Days", "Global_Std_Days"],
+    )
+    return pair_stats
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 3 — ALERT LOGIC
+# ─────────────────────────────────────────────────────────────────────────────
+
+def generate_alerts(agg: pd.DataFrame, pair_stats: pd.DataFrame) -> pd.DataFrame:
+    """
+    Rule A — Commodities / Capture Window
+    Rule B — Technical Products / Churn Risk (time delay + volume drop)
+    'Today' = max Date in dataset (works on historical data).
+    """
+    today = agg["Date"].max()
+
+    last_purchase = (
+        agg.sort_values("Date")
+        .groupby(["Client_ID", "Product_Family"])
+        .last()
+        .reset_index()
+        [["Client_ID", "Product_Family", "Date", "Quantity",
+          "Transaction_Value", "Loyalty_Factor", "Analytical_Block",
+          "Average_Monthly_Spend", "Max_Potential"]]
+        .rename(columns={
+            "Date"             : "Last_Purchase_Date",
+            "Quantity"         : "Last_Qty",
+            "Transaction_Value": "Last_Txn_Value",
+        })
+    )
+
+    last_purchase["Days_Since_Last"] = (
+        today - last_purchase["Last_Purchase_Date"]
+    ).dt.days
+
+    df_eval = last_purchase.merge(pair_stats, on=["Client_ID", "Product_Family"], how="left")
+
+    alerts = []
+
+    for _, row in df_eval.iterrows():
+        cid       = row["Client_ID"]
+        fam       = row["Product_Family"]
+        block     = row["Analytical_Block"]
+        loyal     = row["Loyalty_Factor"]
+        dsl       = row["Days_Since_Last"]
+        mean_days = row["Mean_Days"]
+        std_days  = row["Std_Days"]
+        mean_qty  = row["Mean_Qty"]
+        std_qty   = row["Std_Qty"]
+        last_qty  = row["Last_Qty"]
+        avg_spend = row["Average_Monthly_Spend"]
+        max_pot   = row["Max_Potential"]
+        avg_txn   = row["Avg_Txn_Value"]
+
+        if pd.isna(mean_days) or mean_days <= 0:
+            continue
+
+        # ── RULE A — Commodities / Capture Window ──────────────────────────
+        if block == "Commodities" and loyal == "Promiscuous":
+            if dsl >= mean_days:
+                opportunity = max(0, max_pot - avg_spend)
+                alerts.append({
+                    "Client_ID"                : cid,
+                    "Product_Family"           : fam,
+                    "Analytical_Block"         : block,
+                    "Loyalty_Factor"           : loyal,
+                    "Alert_Reason"             : "Ventana de Captura",
+                    "Days_Since_Last"          : dsl,
+                    "Mean_Days"                : round(mean_days, 1),
+                    "Days_Delayed"             : round(dsl - mean_days, 1),
+                    "Last_Qty"                 : last_qty,
+                    "Mean_Qty"                 : round(mean_qty, 2),
+                    "Average_Transaction_Value": avg_txn,
+                    "Average_Monthly_Spend"    : avg_spend,
+                    "Opportunity_Value"        : round(opportunity, 2),
+                })
+
+        # ── RULE B — Technical Products / Churn Risk ───────────────────────
+        elif block == "Technical":
+            mean_qty_safe = mean_qty if mean_qty > 0 else 1
+            expected_days = mean_days * (last_qty / mean_qty_safe)
+            time_condition   = dsl > expected_days + (1.5 * std_days)
+            qty_condition    = last_qty < mean_qty - (1.0 * std_qty)
+            reason = None
+            if time_condition:
+                reason = "Retraso anómalo en tiempo"
+            elif qty_condition:
+                reason = "Caída drástica de volumen"
+            if reason:
+                alerts.append({
+                    "Client_ID"                : cid,
+                    "Product_Family"           : fam,
+                    "Analytical_Block"         : block,
+                    "Loyalty_Factor"           : loyal,
+                    "Alert_Reason"             : reason,
+                    "Days_Since_Last"          : dsl,
+                    "Mean_Days"                : round(mean_days, 1),
+                    "Days_Delayed"             : round(dsl - expected_days, 1),
+                    "Last_Qty"                 : last_qty,
+                    "Mean_Qty"                 : round(mean_qty, 2),
+                    "Average_Transaction_Value": avg_txn,
+                    "Average_Monthly_Spend"    : avg_spend,
+                    "Opportunity_Value"        : round(avg_spend, 2),
+                })
+
+    if not alerts:
+        return pd.DataFrame()
+    return pd.DataFrame(alerts)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 4 — PRIORITIZATION SCORE (1–100)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def add_priority_score(alerts_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Raw_Score = Average_Transaction_Value × (1 + Days_Delayed / Mean_Days)
+    Min-Max normalised → Nivel de Riesgo [1, 100], rounded to 0 decimals.
+    """
+    if alerts_df.empty:
+        alerts_df["Nivel de Riesgo"] = pd.Series(dtype=float)
+        return alerts_df
+
+    mean_days_safe = alerts_df["Mean_Days"].replace(0, 1)
+    days_delayed   = alerts_df["Days_Delayed"].clip(lower=0)
+    raw = alerts_df["Average_Transaction_Value"] * (1 + days_delayed / mean_days_safe)
+
+    r_min, r_max = raw.min(), raw.max()
+    if r_max == r_min:
+        alerts_df["Nivel de Riesgo"] = 50
+    else:
+        normalised = 1 + 99 * (raw - r_min) / (r_max - r_min)
+        alerts_df["Nivel de Riesgo"] = normalised.round(0).astype(int)
+
+    return alerts_df
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MASTER PIPELINE — cached for performance
+# ─────────────────────────────────────────────────────────────────────────────
+
+@st.cache_data(show_spinner="⚙️  Running alert engine…")
+def run_pipeline(path: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Returns: raw_df, agg, alerts_df"""
+    raw_df     = load_raw_data(path)
+    df         = add_analytical_block(raw_df)
+    df         = compute_loyalty(df)
+    agg        = aggregate_data(df)
+    pair_stats = compute_baselines(agg)
+    alerts_df  = generate_alerts(agg, pair_stats)
+    if not alerts_df.empty:
+        alerts_df = add_priority_score(alerts_df)
+        alerts_df = alerts_df.sort_values(
+            "Nivel de Riesgo", ascending=False
+        ).reset_index(drop=True)
+    return raw_df, agg, alerts_df
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 5 — STREAMLIT UI
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Sidebar ──────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown('<div class="sidebar-logo">💊 Smart Demand Signals</div>',
+                unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-sub">Inibsa · Dental & Pharma Analytics</div>',
+                unsafe_allow_html=True)
+    st.divider()
+
+    uploaded = st.file_uploader(
+        "Upload dataset",
+        type=["xlsx", "xls", "csv"],
+        help="Upload database_clean.xlsx or .csv",
+    )
+    st.divider()
+
+    block_filter = st.selectbox(
+        "🔍 Analytical Block",
+        options=["All", "Commodities", "Technical"],
+        index=0,
+    )
+
+    risk_range = st.slider(
+        "🎚️ Nivel de Riesgo (min)",
+        min_value=1, max_value=100, value=1, step=1,
+    )
+    st.divider()
+    st.markdown("""
+        **Alert Logic Legend**
+        - 🟠 **Ventana de Captura** — Overdue commodity; client likely at a competitor.
+        - 🔴 **Retraso anómalo** — Technical delay beyond statistical threshold.
+        - 🟡 **Caída de volumen** — Technical quantity dropped sharply.
+
+        ---
+        **Feedback Loop**
+        Use *Register Action* to label outcomes for future model refinement.
+    """)
+
+# ── Top banner ────────────────────────────────────────────────────────────────
+st.markdown("""
+    <div class="banner">
+        <h1>📡 Smart Demand Signals</h1>
+        <p>Explainable, rule-based alert engine &mdash;
+           100 % Pandas &bull; Zero black-box ML</p>
+    </div>
+""", unsafe_allow_html=True)
+
+# ── Resolve data path ─────────────────────────────────────────────────────────
+data_path = None
+if uploaded is not None:
+    import tempfile
+    suffix = os.path.splitext(uploaded.name)[1]
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(uploaded.read())
+        data_path = tmp.name
+else:
+    for candidate in ("database_clean.xlsx", "database_clean.xls",
+                      "database_clean.csv"):
+        if os.path.exists(candidate):
+            data_path = candidate
+            break
+
+if data_path is None:
+    st.info(
+        "👆  Upload **database_clean.xlsx** (or .csv) via the sidebar, "
+        "or place it in the same folder as app.py.",
+        icon="📂",
+    )
+    st.stop()
+
+# ── Run pipeline ──────────────────────────────────────────────────────────────
+try:
+    raw_df, agg, alerts_df = run_pipeline(data_path)
+except Exception as exc:
+    st.error(f"❌ Pipeline error: {exc}")
+    with st.expander("Show traceback"):
+        import traceback
+        st.code(traceback.format_exc())
+    st.stop()
+
+# ── KPI Cards ─────────────────────────────────────────────────────────────────
+total_alerts      = len(alerts_df)
+total_opportunity = alerts_df["Opportunity_Value"].sum() if not alerts_df.empty else 0
+n_clients         = alerts_df["Client_ID"].nunique()    if not alerts_df.empty else 0
+n_high_risk       = (alerts_df["Nivel de Riesgo"] >= 70).sum() if not alerts_df.empty else 0
+
+col1, col2, col3, col4 = st.columns(4)
+kpi_cards = [
+    (col1, total_alerts,               "Total Alerts"),
+    (col2, n_clients,                  "Clients at Risk"),
+    (col3, n_high_risk,                "High Risk (≥70)"),
+    (col4, f"€{total_opportunity:,.0f}", "Total Opportunity"),
+]
+for col, val, label in kpi_cards:
+    with col:
+        st.markdown(
+            f'<div class="kpi-card">'
+            f'<div class="kpi-value">{val}</div>'
+            f'<div class="kpi-label">{label}</div></div>',
+            unsafe_allow_html=True,
+        )
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# ── Apply filters ─────────────────────────────────────────────────────────────
+if alerts_df.empty:
+    st.warning("⚠️ No alerts generated. Dataset may need more purchase history.")
+    st.stop()
+
+filtered_df = alerts_df.copy()
+if block_filter != "All":
+    filtered_df = filtered_df[filtered_df["Analytical_Block"] == block_filter]
+filtered_df = filtered_df[filtered_df["Nivel de Riesgo"] >= risk_range]
+
+# ── Alert table (st.data_editor) ──────────────────────────────────────────────
+st.markdown(
+    '<div class="section-header">🚨 Commercial Alerts — Sales Action Board</div>',
+    unsafe_allow_html=True,
+)
+st.caption(
+    f"Showing **{len(filtered_df)}** of **{total_alerts}** alerts · "
+    f"'Today' = **{agg['Date'].max().strftime('%d %b %Y')}** (max date in dataset)"
+)
+
+display_df = filtered_df.copy().reset_index(drop=True)
+display_df["Register_Action"] = ""
+display_df = display_df.rename(columns={
+    "Alert_Reason"     : "Motivo",
+    "Opportunity_Value": "Valor_Oportunidad (€)",
+})
+
+COLS = ["Client_ID", "Product_Family", "Analytical_Block", "Motivo",
+        "Nivel de Riesgo", "Days_Since_Last", "Valor_Oportunidad (€)",
+        "Register_Action"]
+
+# Persist feedback across reruns via session state
+if "feedback_df" not in st.session_state:
+    st.session_state.feedback_df = display_df[COLS].copy()
+else:
+    merged = display_df[COLS].copy()
+    prev   = st.session_state.feedback_df
+    key_cols = ["Client_ID", "Product_Family", "Motivo"]
+    if all(c in prev.columns for c in key_cols):
+        saved = prev[key_cols + ["Register_Action"]].rename(
+            columns={"Register_Action": "Saved_Action"})
+        merged = merged.merge(saved, on=key_cols, how="left")
+        merged["Register_Action"] = merged["Saved_Action"].where(
+            merged["Saved_Action"].notna() & (merged["Saved_Action"] != ""),
+            other=merged["Register_Action"])
+        merged = merged.drop(columns=["Saved_Action"])
+    st.session_state.feedback_df = merged
+
+edited = st.data_editor(
+    st.session_state.feedback_df,
+    use_container_width=True,
+    hide_index=True,
+    num_rows="fixed",
+    column_config={
+        "Client_ID": st.column_config.TextColumn(
+            "Client ID", disabled=True, width="small"),
+        "Product_Family": st.column_config.TextColumn(
+            "Product Family", disabled=True, width="medium"),
+        "Analytical_Block": st.column_config.TextColumn(
+            "Block", disabled=True, width="small"),
+        "Motivo": st.column_config.TextColumn(
+            "Alert Reason (Motivo)", disabled=True, width="large"),
+        "Nivel de Riesgo": st.column_config.ProgressColumn(
+            "Nivel de Riesgo",
+            help="Priority score 1–100 (higher = more urgent)",
+            min_value=0, max_value=100, format="%d", width="medium"),
+        "Days_Since_Last": st.column_config.NumberColumn(
+            "Days Since Last", disabled=True,
+            width="small", format="%d days"),
+        "Valor_Oportunidad (€)": st.column_config.NumberColumn(
+            "Oportunidad (€)", disabled=True,
+            width="medium", format="€%.2f"),
+        "Register_Action": st.column_config.SelectboxColumn(
+            "📝 Register Action",
+            help="Log the outcome (ML Feedback Loop)",
+            width="medium",
+            options=["", "✅ Success", "❌ False Positive",
+                     "⏳ Pending Follow-up"],
+            required=False,
+            default="",
+        ),
+    },
+    key="alert_editor",
+)
+st.session_state.feedback_df = edited
+
+# ── Feedback export ───────────────────────────────────────────────────────────
+labeled_mask = edited["Register_Action"].isin(
+    ["✅ Success", "❌ False Positive", "⏳ Pending Follow-up"])
+n_labeled = labeled_mask.sum()
+if n_labeled > 0:
+    st.success(f"✅ {n_labeled} alert(s) labeled — ready for feedback export.")
+    st.download_button(
+        label="⬇️ Download Feedback CSV",
+        data=edited[labeled_mask].to_csv(index=False).encode("utf-8"),
+        file_name="smart_demand_signals_feedback.csv",
+        mime="text/csv",
+    )
+
+# ── Drill-down expanders ──────────────────────────────────────────────────────
+st.markdown("<br>", unsafe_allow_html=True)
+
+with st.expander("📊 Alert Distribution by Block & Reason"):
+    if not filtered_df.empty:
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.markdown("**Alerts by Analytical Block**")
+            bc = filtered_df["Analytical_Block"].value_counts().reset_index()
+            bc.columns = ["Block", "Count"]
+            st.dataframe(bc, hide_index=True, use_container_width=True)
+        with col_b:
+            st.markdown("**Alerts by Reason**")
+            rc = filtered_df["Alert_Reason"].value_counts().reset_index()
+            rc.columns = ["Alert Reason", "Count"]
+            st.dataframe(rc, hide_index=True, use_container_width=True)
+        st.markdown("**Top 10 Opportunities by Client**")
+        top = (filtered_df.groupby("Client_ID")["Opportunity_Value"]
+               .sum().sort_values(ascending=False).head(10).reset_index())
+        top.columns = ["Client_ID", "Total Opportunity (€)"]
+        top["Total Opportunity (€)"] = top["Total Opportunity (€)"].map("€{:,.2f}".format)
+        st.dataframe(top, hide_index=True, use_container_width=True)
+
+with st.expander("🔬 Raw Alert Data (full columns)"):
+    st.dataframe(filtered_df.reset_index(drop=True),
+                 use_container_width=True, hide_index=True)
+
+with st.expander("📋 Aggregated Transaction Data"):
+    st.dataframe(agg, use_container_width=True, hide_index=True)
+
+with st.expander("📌 Methodology & Rule Explainer"):
+    st.markdown("""
+    ### Alert Engine — Decision Rules
+    All logic is **100 % rule-based** (no black-box ML).
+
+    #### Analytical Block Classification
+    | Keyword in Product Family | Block |
+    |---------------------------|-------|
+    | ANESTE, AGUJA, DESINFEC   | Commodities |
+    | Anything else             | Technical |
+
+    #### Loyalty Factor
+    > Loyal if Average_Monthly_Spend >= 0.85 × Client_Potential
+
+    #### Rule A — Ventana de Captura (Commodities)
+    Block == Commodities AND Loyalty == Promiscuous AND Days_Since_Last >= Mean_Days
+    Opportunity = Client_Potential - Average_Monthly_Spend
+
+    #### Rule B — Technical Churn Risk
+    Expected_Days = Mean_Days × (Last_Qty / Mean_Qty)
+    Time  alert : Days_Since_Last > Expected_Days + 1.5 × Std_Days
+    Volume alert: Last_Qty < Mean_Qty - 1.0 × Std_Qty
+    Opportunity = Average_Monthly_Spend
+
+    #### Priority Score
+    Raw = Avg_Transaction_Value × (1 + Days_Delayed / Mean_Days)
+    Nivel_Riesgo = Min-Max normalise → [1, 100]
+    """)
+
+st.markdown(
+    '<div class="footer">Smart Demand Signals v1.0 · Inibsa · '
+    '24-h Hackathon · Pandas + Streamlit · No black-box ML</div>',
+    unsafe_allow_html=True,
+)`;
+
+  // ── OS Tab switcher ──────────────────────────────────────────────────────
+  let currentOS = 'win';
+
+  function switchOS(os) {
+    currentOS = os;
+
+    // Update tab buttons
+    document.querySelectorAll('.os-tab').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.os-tab').forEach(btn => {
+      if (btn.getAttribute('onclick') === `switchOS('${os}')`) {
+        btn.classList.add('active');
+      }
+    });
+
+    // Show/hide OS-specific content blocks
+    document.querySelectorAll('.os-content').forEach(el => {
+      el.style.display = 'none';
+    });
+    document.querySelectorAll(`.os-${os}`).forEach(el => {
+      el.style.display = 'block';
+    });
+
+    // Toggle inline spans
+    document.querySelectorAll('.os-win-inline').forEach(el => {
+      el.style.display = os === 'win' ? 'inline' : 'none';
+    });
+    document.querySelectorAll('.os-mac-inline').forEach(el => {
+      el.style.display = (os === 'mac' || os === 'lin') ? 'inline' : 'none';
+    });
+    document.querySelectorAll('.os-mac-inline').forEach(el => {
+      if (os === 'lin') el.textContent = 'source venv/bin/activate';
+      else if (os === 'mac') el.textContent = 'source venv/bin/activate';
+    });
+  }
+
+  // ── Copy individual command ────────────────────────────────────────────────
+  function copyCmd(btn, text) {
+    // If there's a sibling cmd-code visible, prefer that text
+    const block = btn.closest('.cmd-block');
+    let copyText = text;
+    if (block) {
+      const visibleCode = Array.from(block.querySelectorAll('.cmd-code'))
+        .find(el => el.style.display !== 'none');
+      if (visibleCode) copyText = visibleCode.textContent.trim();
+    }
+    navigator.clipboard.writeText(copyText).then(() => {
+      btn.textContent = '✓ Copiado';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copiar';
+        btn.classList.remove('copied');
+      }, 2000);
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = copyText;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.textContent = '✓ Copiado';
+      setTimeout(() => { btn.textContent = 'Copiar'; }, 2000);
+    });
+  }
+
+  // ── Render code with syntax highlighting ──────────────────────────────────
+  const codeBlock = document.getElementById('codeBlock');
+  const lineNumbers = document.getElementById('lineNumbers');
+
+  codeBlock.textContent = CODE;
+  hljs.highlightElement(codeBlock);
+
+  // Generate line numbers
+  const lineCount = CODE.split('\n').length;
+  let lnHtml = '';
+  for (let i = 1; i <= lineCount; i++) {
+    lnHtml += `<span>${i}</span>`;
+  }
+  lineNumbers.innerHTML = lnHtml;
+
+  // Sync scroll between line numbers and code
+  const scrollEl = document.getElementById('codeScroll');
+
+  // ── Copy to clipboard ─────────────────────────────────────────────────────
+  function copyCode() {
+    const btn = document.getElementById('copyBtn');
+    navigator.clipboard.writeText(CODE).then(() => {
+      btn.classList.add('copied');
+      btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!`;
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy app.py`;
+      }, 2500);
+    }).catch(() => {
+      // Fallback for older browsers
+      const ta = document.createElement('textarea');
+      ta.value = CODE;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => { btn.textContent = '📋 Copy app.py'; }, 2500);
+    });
+  }
+</script>
+
+</body>
+</html>
