@@ -8,6 +8,7 @@
 import streamlit as st
 import requests
 from datetime import datetime
+from visual_components import render_visual_dashboard
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
@@ -494,3 +495,8 @@ with st.expander("📚 Metodología del Motor Estadístico"):
     - **Multiplicadores de Contexto:** Cada tipo de señal tiene un peso diferencial (`Fugado >1 año` ×1.5, `Ventana de Captura` ×1.2, `Caída de Volumen` ×1.1).
     - **Aprendizaje en Tiempo Real:** El comercial puede reportar un **Falso Positivo** (penalización ×0.1) o una **Venta Recuperada** (penalización ×0.5), recalibrando la prioridad de forma dinámica sin necesidad de reentrenar ningún modelo.
     """)
+
+# ─────────────────────────────────────────────────────────────
+# ADVANCED VISUAL ANALYTICS
+# ─────────────────────────────────────────────────────────────
+render_visual_dashboard(alerts_df)
