@@ -481,21 +481,113 @@ for _, row in edited_df.iterrows():
 
 if changed:
     st.rerun()
+st.markdown("""
+<style>
+
+/* Main expander header */
+.streamlit-expanderHeader {
+    background-color: #111827 !important;
+    color: white !important;
+
+    padding: 12px 16px !important;
+
+    border-radius: 10px !important;
+
+    font-weight: 700 !important;
+    font-size: 16px !important;
+}
+
+/* Collapsed state */
+details summary {
+    background-color: #111827 !important;
+    color: white !important;
+
+    border-radius: 10px !important;
+}
+
+/* Expanded state */
+details[open] summary {
+    background-color: #111827 !important;
+    color: white !important;
+
+    border-radius: 10px 10px 0px 0px !important;
+}
+
+/* Arrow icon */
+.streamlit-expanderHeader svg {
+    fill: white !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # METHODOLOGY EXPANDER
 # ─────────────────────────────────────────────────────────────────────────────
 with st.expander("📚 Metodología del Motor Estadístico"):
+
     st.markdown("""
-    **Motor de Decisión Inteligente — Lógica 100% Explicable**
+    <div style="
+        color:#111827;
+        font-size:15px;
+        line-height:1.7;
+        background:white;
+        padding:22px;
+        border-radius:12px;
+        border:1px solid #d1d5db;
+    ">
 
-    - **Filtro de Ruido:** Evaluamos únicamente transacciones de los últimos 24 meses (ventana móvil) e ignoramos alertas con score < 20.
-    - **Señales detectadas:** Diferenciamos entre **Oportunidad** (ventana de captura frente a competencia) y **Riesgo** (retrasos anómalos ajustados al volumen comprado).
-    - **Normalización Robusta:** Los scores se calculan cruzando el impacto económico histórico con la urgencia temporal, limitando outliers con *Cap P98* y aplicando escala logarítmica (*Log1p*) para que ninguna clínica pequeña quede invisible.
-    - **Multiplicadores de Contexto:** Cada tipo de señal tiene un peso diferencial (`Fugado >1 año` ×1.5, `Ventana de Captura` ×1.2, `Caída de Volumen` ×1.1).
-    - **Aprendizaje en Tiempo Real:** El comercial puede reportar un **Falso Positivo** (penalización ×0.1) o una **Venta Recuperada** (penalización ×0.5), recalibrando la prioridad de forma dinámica sin necesidad de reentrenar ningún modelo.
-    """)
+    <h4 style="
+        margin-top:0;
+        color:#111827;
+    ">
+    Motor de Decisión Inteligente — Lógica 100% Explicable
+    </h4>
 
+    <ul style="padding-left:20px;">
+
+    <li style="margin-bottom:12px;">
+    <b>Filtro de Ruido:</b>
+    Evaluamos únicamente transacciones de los últimos 24 meses
+    e ignoramos alertas con score &lt; 20.
+    </li>
+
+    <li style="margin-bottom:12px;">
+    <b>Señales detectadas:</b>
+    Diferenciamos entre <b>Oportunidad</b>
+    (ventana de captura frente a competencia)
+    y <b>Riesgo</b>
+    (retrasos anómalos ajustados al volumen comprado).
+    </li>
+
+    <li style="margin-bottom:12px;">
+    <b>Normalización Robusta:</b>
+    Aplicamos Cap P98 y escala logarítmica (Log1p)
+    para evitar distorsiones y mejorar la visibilidad
+    de clínicas pequeñas.
+    </li>
+
+    <li style="margin-bottom:12px;">
+    <b>Multiplicadores de Contexto:</b>
+
+    <ul>
+        <li>Fugado &gt;1 año → ×1.5</li>
+        <li>Ventana de Captura → ×1.2</li>
+        <li>Caída de Volumen → ×1.1</li>
+    </ul>
+    </li>
+
+    <li>
+    <b>Aprendizaje en Tiempo Real:</b>
+    El comercial puede reportar falsos positivos
+    o ventas recuperadas para recalibrar
+    dinámicamente la prioridad de alertas.
+    </li>
+
+    </ul>
+
+    </div>
+    """, unsafe_allow_html=True)
 # ─────────────────────────────────────────────────────────────
 # ADVANCED VISUAL ANALYTICS
 # ─────────────────────────────────────────────────────────────
